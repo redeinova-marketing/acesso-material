@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Validar CNPJ</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    :root{
+      --bg:#f4f6f8;
+      --text:#111;
+      --muted:#444;
+      --card:#fff;
+      --border:#d7dbe0;
+      --primary:#0066ff;
+      --shadow: 0 18px 45px rgba(0,0,0,.10);
+      --radius: 18px;
+    }
+
+    body{
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      margin:0;
+      color: var(--text);
+    }
+
+    .wrap{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 48px 18px;
+    }
+
+    /* “coluna” central */
+    .container{
+      width: min(560px, 100%);
+      display:flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+    }
+
+    .logo-top{
+      width: 170px;
+      height:auto;
+      display:block;
+      margin:0;
+    }
+
+    .card{
+      width: 100%;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 32px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0,0,0,.04);
+    }
+
+    .title{
+      display:flex;
+      align-items:center;
+      justify-content:center; /* centraliza o bloco do título */
+      gap:10px;
+      margin-bottom: 10px;
+      text-align:center;
+    }
+
+    .title img{
+      width:24px;
+      height:24px;
+      flex: 0 0 auto;
+    }
+
+    h1{
+      font-size: 26px;
+      line-height: 1.1;
+      margin:0;
+      letter-spacing: -0.2px;
+    }
+
+    p{
+      margin: 0 0 22px;
+      color: var(--muted);
+      font-size: 15px;
+      text-align:center;
+    }
+
+    .field{
+      display:flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    label{
+      font-size: 13px;
+      margin:0;
+      opacity:.95;
+    }
+
+    input{
+      width:100%;
+      padding: 16px 14px;
+      font-size: 18px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      outline:none;
+      background:#fff;
+    }
+
+    input:focus{
+      border-color:#6aa5ff;
+      box-shadow:0 0 0 4px rgba(106,165,255,.22);
+    }
+
+    button{
+      width:100%;
+      margin-top: 16px;
+      padding: 16px 14px;
+      font-size: 17px;
+      font-weight: 700;
+      border:0;
+      border-radius: 12px;
+      cursor:pointer;
+      background: var(--primary);
+      color:#fff;
+      transition: transform .04s ease, opacity .2s ease, filter .2s ease;
+    }
+
+    button:active{
+      transform: translateY(1px);
+    }
+
+    button:hover{
+      filter: brightness(1.05);
+    }
+
+    button:disabled{
+      opacity:.7;
+      cursor:not-allowed;
+      filter: none;
+    }
+
+    .msg{
+      margin-top: 16px;
+      font-weight: 700;
+      font-size: 14px;
+      text-align:center;
+    }
+
+    .ok{ color:#0a7a2f; }
+    .err{ color:#b00020; }
+
+    /* deixa mais “alto” em telas grandes */
+    @media (min-width: 900px){
+      .wrap{ padding: 70px 24px; }
+      .logo-top{ width: 190px; }
+      .card{ padding: 38px; }
+      h1{ font-size: 28px; }
+      input{ font-size: 19px; padding: 18px 16px; }
+      button{ padding: 18px 16px; font-size: 18px; }
+    }
+
+    /* DARK MODE AUTOMÁTICO */
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg:#0e1220;
+        --text:#eaeaf0;
+        --muted:#bfc3ff;
+        --card:#161a2b;
+        --border:#2c3160;
+        --primary:#4d7cff;
+        --shadow: 0 18px 50px rgba(0,0,0,.55);
+      }
+
+      input{
+        background:#0e1220;
+        color:#fff;
+      }
+
+      input::placeholder{ color:#8f94c9; }
+
+      .ok{ color:#4ade80; }
+      .err{ color:#f87171; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="container">
+
+      <img src="img/logo.png" alt="Logo da empresa" class="logo-top">
+
+      <div class="card">
+        <div class="title">
+          <img src="img/lock.svg" alt="Dados seguros">
+          <h1>Validação de CNPJ</h1>
+        </div>
+
+        <p>Digite seu CNPJ para validar.</p>
+
+        <div class="field">
+          <label for="cnpj">CNPJ</label>
+          <input
+            id="cnpj"
+            inputmode="numeric"
+            autocomplete="off"
+            placeholder="Somente números (14 dígitos)"
+          />
+        </div>
+
+        <button id="btn">Validar</button>
+
+        <div id="msg" class="msg"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const $cnpj = document.getElementById('cnpj');
+    const $msg  = document.getElementById('msg');
+    const $btn  = document.getElementById('btn');
+
+    const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuMYMBuf2PdQ8oHKnTtAOQfkLQONCgBMt-FAZRCU2C37Vugou8HmQ9URXLe4gMyxG0/exec';
+
+    function limparNumeros(s){
+      return (s || '').replace(/\D/g, '');
+    }
+
+    function mostrar(texto, tipo){
+      $msg.textContent = texto;
+      $msg.className = 'msg ' + (tipo === 'ok' ? 'ok' : 'err');
+    }
+
+    $btn.addEventListener('click', () => {
+      const cnpj = limparNumeros($cnpj.value);
+
+      if (!cnpj) return mostrar('Digite um CNPJ.', 'err');
+      if (cnpj.length !== 14) return mostrar('CNPJ precisa ter 14 dígitos.', 'err');
+
+      mostrar('Validando...', 'ok');
+      $btn.disabled = true;
+
+      fetch(APP_SCRIPT_URL, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ cnpj })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (!data || !data.ok){
+          mostrar((data && data.msg) ? data.msg : 'Acesso negado.', 'err');
+          return;
+        }
+        mostrar('Acesso liberado. Redirecionando...', 'ok');
+        window.location.href = data.link;
+      })
+      .catch(() => {
+        mostrar('Erro de comunicação. Tente novamente.', 'err');
+      })
+      .finally(() => {
+        $btn.disabled = false;
+      });
+    });
+  </script>
+</body>
+</html>
