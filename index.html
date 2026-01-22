@@ -224,7 +224,7 @@
     const $msg  = document.getElementById('msg');
     const $btn  = document.getElementById('btn');
 
-    // ✅ SUA URL /exec
+    // ✅ URL do Apps Script (App da Web) /exec
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuMYMBuf2PdQ8oHKnTtAOQfkLQONCgBMt-FAZRCU2C37Vugou8HmQ9URXLe4gMyxG0/exec';
 
     function limparNumeros(s){
@@ -236,6 +236,15 @@
       $msg.className = 'msg ' + (tipo === 'ok' ? 'ok' : 'err');
     }
 
+    // ✅ troca mensagens do servidor pelas suas mensagens “de negócio”
+    function traduzirMsg(msg){
+      const m = String(msg || '').toLowerCase();
+      if (m.includes('cnpj não encontrado') || m.includes('cnpj nao encontrado') || m.includes('não encontrado')) {
+        return 'CNPJ não cadastrado na base de Marketing';
+      }
+      return msg;
+    }
+
     $btn.addEventListener('click', async () => {
       const cnpj = limparNumeros($cnpj.value);
 
@@ -245,22 +254,20 @@
       mostrar('Validando...', 'ok');
       $btn.disabled = true;
 
-      // ✅ timeout (pra não ficar preso)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s
 
       try {
-        // ✅ envia como FORM (evita CORS-preflight que dá “Erro de comunicação”)
-        const body = new URLSearchParams({ cnpj }).toString();
+        // ✅ manda JSON como text/plain (normalmente evita preflight/CORS chato)
+        const payload = JSON.stringify({ cnpj });
 
         const resp = await fetch(APP_SCRIPT_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-          body,
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: payload,
           signal: controller.signal
         });
 
-        // Se o servidor respondeu, mas com erro HTTP
         if (!resp.ok) {
           if (resp.status === 404) return mostrar('Servidor não encontrado (404).', 'err');
           if (resp.status === 401 || resp.status === 403) return mostrar('Acesso bloqueado pelo servidor (403/401).', 'err');
@@ -268,17 +275,16 @@
           return mostrar(`Erro no servidor (HTTP ${resp.status}).`, 'err');
         }
 
-        // Tenta ler JSON
         let data;
         try {
           data = await resp.json();
-        } catch (e) {
+        } catch {
           return mostrar('Resposta inválida do servidor (não veio JSON).', 'err');
         }
 
-        // Mensagem específica pedida (fallback)
         if (!data || !data.ok) {
-          return mostrar((data && data.msg) ? data.msg : 'CNPJ não cadastrado na base de Marketing', 'err');
+          const msg = traduzirMsg((data && data.msg) ? data.msg : '');
+          return mostrar(msg || 'CNPJ não cadastrado na base de Marketing', 'err');
         }
 
         if (!data.link) {
