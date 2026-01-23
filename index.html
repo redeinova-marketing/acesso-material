@@ -242,7 +242,7 @@
     function traduzirMsg(msg){
       const m = String(msg || '').toLowerCase();
       if (m.includes('cnpj não encontrado') || m.includes('cnpj nao encontrado') || m.includes('não encontrado')) {
-        return 'CNPJ não cadastrado na base de Marketing';
+        return 'CNPJ não encontrado, favor entrar em contato na central da Rede Inova';
       }
       return msg;
     }
@@ -309,5 +309,6 @@
   </script>
 </body>
 </html>
+
 
 
