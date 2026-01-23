@@ -229,6 +229,11 @@
     // ✅ URL do Apps Script (App da Web) /exec
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuMYMBuf2PdQ8oHKnTtAOQfkLQONCgBMt-FAZRCU2C37Vugou8HmQ9URXLe4gMyxG0/exec';
 
+    // ✅ MENSAGENS: MUDA AQUI E ACABOU
+    const MSG_NAO_CADASTRADO = 'CNPJ não encontrado, favor entrar em contato na central da Rede Inova';
+    const MSG_SEM_LINK = 'Acesso liberado, mas o link não foi enviado. Entre em contato com a central da Rede Inova.';
+    const MSG_ERRO_GENERICO = 'Erro de comunicação. Tente novamente.';
+
     function limparNumeros(s){
       return (s || '').replace(/\D/g, '');
     }
@@ -238,13 +243,23 @@
       $msg.className = 'msg ' + (tipo === 'ok' ? 'ok' : 'err');
     }
 
-    // ✅ troca mensagens do servidor pelas suas mensagens “de negócio”
-    function traduzirMsg(msg){
-      const m = String(msg || '').toLowerCase();
-      if (m.includes('cnpj não encontrado') || m.includes('cnpj nao encontrado') || m.includes('não encontrado')) {
-        return 'CNPJ não encontrado, favor entrar em contato na central da Rede Inova';
-      }
-      return msg;
+    // ✅ Detecta “não cadastrado” mesmo com variações/acentos
+    function ehNaoCadastrado(msg){
+      const m = String(msg || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+      return (
+        m.includes('cnpj nao encontrado') ||
+        m.includes('nao encontrado') ||
+        m.includes('nao cadastrado') ||
+        m.includes('inexistente') ||
+        m.includes('negado') ||
+        m.includes('bloqueado') ||
+        m.includes('sem permissao') ||
+        m.includes('sem permissão')
+      );
     }
 
     $btn.addEventListener('click', async () => {
@@ -260,7 +275,6 @@
       const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s
 
       try {
-        // ✅ manda JSON como text/plain (normalmente evita preflight/CORS chato)
         const payload = JSON.stringify({ cnpj });
 
         const resp = await fetch(APP_SCRIPT_URL, {
@@ -284,13 +298,25 @@
           return mostrar('Resposta inválida do servidor (não veio JSON).', 'err');
         }
 
+        // ❌ Não OK: controla a mensagem do seu jeito
         if (!data || !data.ok) {
-          const msg = traduzirMsg((data && data.msg) ? data.msg : '');
-          return mostrar(msg || 'CNPJ não encontrado, favor entrar em contato na central da Rede Inova', 'err');
+          const serverMsg = (data && data.msg) ? String(data.msg) : '';
+
+          if (!serverMsg) {
+            return mostrar(MSG_NAO_CADASTRADO, 'err');
+          }
+
+          if (ehNaoCadastrado(serverMsg)) {
+            return mostrar(MSG_NAO_CADASTRADO, 'err');
+          }
+
+          // Se veio outro motivo, mostra o motivo do servidor (ou cai no padrão)
+          return mostrar(serverMsg || MSG_NAO_CADASTRADO, 'err');
         }
 
+        // ✅ OK mas sem link
         if (!data.link) {
-          return mostrar('Acesso liberado, mas o link não foi enviado.', 'err');
+          return mostrar(MSG_SEM_LINK, 'err');
         }
 
         mostrar('Acesso liberado. Redirecionando...', 'ok');
@@ -300,7 +326,7 @@
         if (err && err.name === 'AbortError') {
           return mostrar('Demorou demais para responder. Tente novamente.', 'err');
         }
-        return mostrar('Erro de comunicação. Tente novamente.', 'err');
+        return mostrar(MSG_ERRO_GENERICO, 'err');
       } finally {
         clearTimeout(timeoutId);
         $btn.disabled = false;
@@ -309,7 +335,3 @@
   </script>
 </body>
 </html>
-
-
-
-
