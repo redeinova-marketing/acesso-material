@@ -286,7 +286,7 @@
 
         if (!data || !data.ok) {
           const msg = traduzirMsg((data && data.msg) ? data.msg : '');
-          return mostrar(msg || 'CNPJ não cadastrado na base de Marketing', 'err');
+          return mostrar(msg || 'CNPJ não encontrado, favor entrar em contato na central da Rede Inova', 'err');
         }
 
         if (!data.link) {
@@ -309,6 +309,7 @@
   </script>
 </body>
 </html>
+
 
 
 
